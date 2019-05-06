@@ -33,7 +33,7 @@ def evaluate(input_variable, len_inputs):
         # Choose top word from output
         _, top_index = decoder_output.data.topk(1)
 
-        decoded_output[:, di] = top_index
+        decoded_output[:, di] = top_index.data.squeeze()
 
         # Next input is chosen word
         decoder_input = Variable(top_index)
@@ -63,8 +63,8 @@ def eval_examples(sources, preds, targets, num=3):
     return str
 
 _, eval_corpus, word_dict = build_corpus()
-encoder, decoder = get_model(word_dict.n_words)
-
+encoder, decoder = get_model(word_dict.n_words, step=10000)
+print encoder.embedding, encoder.gru
 inputs, targets, len_inputs, _ = eval_corpus.next_batch(100)
 input_variable = Variable(torch.LongTensor(inputs), requires_grad=False)
 if Config.use_cuda:

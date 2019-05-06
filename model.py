@@ -5,7 +5,7 @@ import glob
 import os
 
 import torch.optim as optim
-
+import time
 from seq2seq.seq2seq import *
 
 
@@ -28,7 +28,7 @@ def load_state(step=None, path='checkpoints/model'):
         else:
             filename = max(file_list, key=os.path.getctime)
 
-        state = torch.load(filename)
+        state = torch.load(filename,  map_location='cpu')
     return state
 
 

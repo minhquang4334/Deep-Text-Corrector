@@ -67,6 +67,12 @@ class Corpus:
         len_targets = map(lambda i: i[1], target_lens)
         return inputs, targets, len_inputs, len_targets
 
+    def print_corpus_info(self):
+        print 'max length: ', self.max_length
+        print 'lines: ', self.lines.__len__()
+        print 'pairs: ', self.pairs.__sizeof__()
+        print 'dict - number words: ', self.dict.n_words
+
 
 def build_corpus():
     word_dict = WordDict()

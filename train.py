@@ -3,15 +3,16 @@
 
 import torch.optim
 from torch.nn.utils.rnn import pad_packed_sequence as unpack
-
+import time
 from model import *
 from preprocess import *
 from utils import *
 from tensorboard_logger import Logger
+import os, errno
 
 final_steps = 50000
 print_every = 1
-save_every = 500
+save_every = 1
 learning_rate = 0.0001
 teacher_forcing_ratio = 0.5
 clip = 5.0
@@ -64,8 +65,8 @@ def train(input_batch, len_inputs, target_batch, encoder, decoder, encoder_optim
     # batch_size, input_length = input_batch.size()
     batch_size, target_length = target_batch.size()
 
-    # TODO parameter를 paddingsequence로 받게끔 하고 아래는 삭제
-    length_targets = Variable(torch.LongTensor(map(lambda s: len(s), target_batch))).cuda()
+    # length_targets = Variable(torch.LongTensor(map(lambda s: len(s), target_batch))).cuda()
+    length_targets = Variable(torch.LongTensor(map(lambda s: len(s), target_batch)))
 
     # Run words through encoder
     encoder_hidden = encoder.init_hidden(batch_size)
@@ -115,14 +116,14 @@ def train(input_batch, len_inputs, target_batch, encoder, decoder, encoder_optim
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.data[0] / target_length
+    return loss.data / target_length
 
 
 # Get train corpus and word_dict
 train_corpus, _, word_dict = build_corpus()
 
 # Build models, optimizers and load states
-state = load_state()
+state = load_state()  # load state from trained model
 step = 1
 if state:
     step = state['step'] + 1
@@ -137,6 +138,16 @@ start = time.time()
 
 # Set configuration for using Tensorboard
 logger = Logger('graphs')
+
+# folder_model = 'model_' + str(time.time())
+# path_folder = 'checkpoints/' + folder_model
+# if not os.path.isdir(path_folder):
+#     try:
+#         os.makedirs(path_folder)
+#     except OSError as e:
+#         if e.errno != errno.EEXIST:
+#             raise
+
 
 for step in range(step, final_steps + 1):
 
@@ -156,7 +167,7 @@ for step in range(step, final_steps + 1):
     logger.scalar_summary('loss', loss, step)
 
     if step % print_every == 0:
-        print('%s: %s (%d %d%%)' % (step, time_since(start, 1. * step / final_steps), step, step / final_steps * 100))
+        print('%s: %s (%d %f%%)' % (step, time_since(start, 1. * step / final_steps), step, float(step / final_steps * 100)))
 
     if step % save_every == 0:
         save_state(encoder, decoder, encoder_optimizer, decoder_optimizer, step)
