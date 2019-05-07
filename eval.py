@@ -6,7 +6,7 @@ from preprocess import *
 from config import Config
 
 
-def evaluate(input_variable, len_inputs):
+def evaluate(input_variable, len_inputs, encoder, decoder):
     batch_size, input_length = input_variable.size()
 
     # Run through encoder
@@ -32,7 +32,9 @@ def evaluate(input_variable, len_inputs):
 
         # Choose top word from output
         _, top_index = decoder_output.data.topk(1)
+       # print decoded_output[:, di].size(), top_index.data.size()
 
+        #decoded_output[:, di] = top_index
         decoded_output[:, di] = top_index.data.squeeze()
 
         # Next input is chosen word
@@ -53,7 +55,7 @@ def corpus_wer(r, h):
     return np.mean(map(lambda (a, b): wer(a, b), zip(r, h)))
 
 
-def eval_examples(sources, preds, targets, num=3):
+def eval_examples(sources, preds, targets, num=5):
     str = ''
     for i in range(num):
         source = word_dict.indexes_to_sentence(sources[i])
@@ -62,17 +64,32 @@ def eval_examples(sources, preds, targets, num=3):
         str += '#{}\nSource:\t{}\nPred:\t{}\nTarget:\t{}\n\n'.format(i, source, pred, target)
     return str
 
-_, eval_corpus, word_dict = build_corpus()
-encoder, decoder = get_model(word_dict.n_words, step=10000)
-print encoder.embedding, encoder.gru
-inputs, targets, len_inputs, _ = eval_corpus.next_batch(100)
-input_variable = Variable(torch.LongTensor(inputs), requires_grad=False)
-if Config.use_cuda:
-    input_variable = input_variable.cuda()
 
-output_tensor = evaluate(input_variable, len_inputs)
-preds = output_tensor.cpu().numpy().tolist()
+def example(input, encoder, decoder, corpus, word_dict):
+    input_lens = [corpus.dict.sentence_to_indexes(input, corpus.max_length)]
+    # input_lens = zip(*sorted(zip(input_lens), key=lambda p: p[0][1], reverse=True))
+    inputs = map(lambda i: i[0], input_lens)
+    len_inputs = map(lambda i: i[1], input_lens)
+    input_variable = Variable(torch.LongTensor(inputs), requires_grad=False)
+    output_tensor = evaluate(input_variable, len_inputs, encoder, decoder).squeeze()
+    preds = output_tensor.cpu().numpy().tolist()
+    pred_sentence = word_dict.indexes_to_sentence(preds)
+    return pred_sentence
 
-print('<Baseline>\nWER:{}\nBLEU:{}\n'.format(corpus_wer(targets, inputs), corpus_bleu_single_ref(targets, inputs)))
-print('<Prediction>\nWER:{}\nBLEU:{}\n'.format(corpus_wer(targets, preds), corpus_bleu_single_ref(targets, preds)))
-print('<Examples>\n{}'.format(eval_examples(inputs, preds, targets)))
+
+# _, eval_corpus, word_dict = build_corpus()
+#
+# encoder, decoder = get_model(word_dict.n_words, step=10000)
+#
+# print encoder.embedding, encoder.gru
+# inputs, targets, len_inputs, _ = eval_corpus.next_batch(100)
+# input_variable = Variable(torch.LongTensor(inputs), requires_grad=False)
+# if Config.use_cuda:
+#     input_variable = input_variable.cuda()
+#
+# output_tensor = evaluate(input_variable, len_inputs, encoder, decoder)
+# preds = output_tensor.cpu().numpy().tolist()
+#
+# print('<Baseline>\nWER:{}\nBLEU:{}\n'.format(corpus_wer(targets, inputs), corpus_bleu_single_ref(targets, inputs)))
+# print('<Prediction>\nWER:{}\nBLEU:{}\n'.format(corpus_wer(targets, preds), corpus_bleu_single_ref(targets, preds)))
+# print('<Examples>\n{}'.format(eval_examples(inputs, preds, targets)))

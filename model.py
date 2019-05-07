@@ -7,6 +7,7 @@ import os
 import torch.optim as optim
 import time
 from seq2seq.seq2seq import *
+import torch._utils
 
 
 def save_state(encoder, decoder, encoder_optim, decoder_optim, step, path='checkpoints/model'):
@@ -27,6 +28,7 @@ def load_state(step=None, path='checkpoints/model'):
             filename = path + '-' + str(step)
         else:
             filename = max(file_list, key=os.path.getctime)
+
 
         state = torch.load(filename,  map_location='cpu')
     return state

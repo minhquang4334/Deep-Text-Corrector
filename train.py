@@ -9,6 +9,7 @@ from preprocess import *
 from utils import *
 from tensorboard_logger import Logger
 import os, errno
+import eval
 
 final_steps = 50000
 print_every = 1
@@ -119,6 +120,7 @@ def train(input_batch, len_inputs, target_batch, encoder, decoder, encoder_optim
     return loss.data / target_length
 
 
+
 # Get train corpus and word_dict
 train_corpus, _, word_dict = build_corpus()
 
@@ -148,6 +150,9 @@ logger = Logger('graphs')
 #         if e.errno != errno.EEXIST:
 #             raise
 
+print str(encoder), str(decoder)
+
+sample = "Toi yeu em ?"
 
 for step in range(step, final_steps + 1):
 
@@ -168,6 +173,7 @@ for step in range(step, final_steps + 1):
 
     if step % print_every == 0:
         print('%s: %s (%d %f%%)' % (step, time_since(start, 1. * step / final_steps), step, float(step / final_steps * 100)))
+        print 'Example: ', eval.example(sample, encoder, decoder, train_corpus, word_dict)
 
     if step % save_every == 0:
         save_state(encoder, decoder, encoder_optimizer, decoder_optimizer, step)
